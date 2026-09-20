@@ -1074,7 +1074,27 @@
     return webChannelScriptPromise;
   }
 
+  class PortableStore {
+    constructor() {
+      this.api = global.portableHost;
+      exportHost = {
+        prepareExport: (name, text, mime) => this.api.exportText(name, text, mime)
+          .then((message) => global.dispatchEvent(new CustomEvent("host-file-result", { detail: message })))
+          .catch((error) => global.dispatchEvent(new CustomEvent("host-file-result", { detail: "导出失败：" + error.message }))),
+      };
+    }
+    async waitUntilReady() {}
+    load() { return this.api.load(); }
+    commit(candidate, revision) { return this.api.commit(JSON.stringify(candidate), revision); }
+    subscribe(listener) { return this.api.onState(listener); }
+    onTheme() { return () => {}; }
+    async getThemeColor() { return "#2563eb"; }
+    openCalendar() { return this.api.openCalendar(); }
+    closeCalendar() { return this.api.closeCalendar(); }
+  }
+
   async function connectStore() {
+    if (global.portableHost) return new PortableStore();
     if (global.qt && global.qt.webChannelTransport) {
       await ensureWebChannelScript();
       return connectBridgeStore();

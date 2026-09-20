@@ -1,0 +1,19 @@
+{
+  "name": "todo-worklog-pro",
+  "productName": "TodoWorklogPro",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Offline portable todo and work log",
+  "main": "desktop/main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test desktop/tests/storage.test.cjs",
+    "build:win": "node scripts/build.cjs"
+  },
+  "devDependencies": {
+    "electron": "44.4.3",
+    "@electron/get": "5.1.0",
+    "@electron/asar": "4.3.0",
+    "@electron-internal/extract-zip": "1.0.5"
+  }
+}
