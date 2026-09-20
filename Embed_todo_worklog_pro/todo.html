@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>待办与工作记录 Pro</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="todo.css" />
+  </head>
+  <body class="main-page">
+    <svg class="icon-sprite" aria-hidden="true">
+      <symbol id="icon-grip" viewBox="0 0 24 24"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></symbol>
+      <symbol id="icon-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+      <symbol id="icon-calendar" viewBox="0 0 24 24"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></symbol>
+      <symbol id="icon-settings" viewBox="0 0 24 24"><path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/><path d="M1 14h6"/><path d="M9 8h6"/><path d="M17 16h6"/></symbol>
+      <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+      <symbol id="icon-check" viewBox="0 0 24 24"><path d="m20 6-11 11-5-5"/></symbol>
+      <symbol id="icon-pencil" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></symbol>
+      <symbol id="icon-trash" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/><path d="M10 11v5"/><path d="M14 11v5"/></symbol>
+      <symbol id="icon-archive" viewBox="0 0 24 24"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v13h16V8"/><path d="M10 12h4"/></symbol>
+      <symbol id="icon-restore" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></symbol>
+      <symbol id="icon-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+      <symbol id="icon-download" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></symbol>
+      <symbol id="icon-upload" viewBox="0 0 24 24"><path d="M12 21V9"/><path d="m17 14-5-5-5 5"/><path d="M5 3h14"/></symbol>
+      <symbol id="icon-list" viewBox="0 0 24 24"><path d="m3 7 2 2 4-4"/><path d="M11 6h10"/><path d="m3 17 2 2 4-4"/><path d="M11 16h10"/></symbol>
+      <symbol id="icon-notebook" viewBox="0 0 24 24"><path d="M2 6h4"/><path d="M2 10h4"/><path d="M2 14h4"/><path d="M2 18h4"/><rect width="16" height="20" x="4" y="2" rx="2"/><path d="M16 2v20"/></symbol>
+      <symbol id="icon-tag" viewBox="0 0 24 24"><path d="M12.6 2.6H5a2 2 0 0 0-2 2v7.6a2 2 0 0 0 .6 1.4l7.8 7.8a2 2 0 0 0 2.8 0l7.2-7.2a2 2 0 0 0 0-2.8l-7.8-7.8a2 2 0 0 0-1-.6Z"/><circle cx="8.5" cy="8.5" r="1.5"/></symbol>
+      <symbol id="icon-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+      <symbol id="icon-repeat" viewBox="0 0 24 24"><path d="m17 1 4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="m7 23-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></symbol>
+      <symbol id="icon-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    </svg>
+
+    <div id="loadingState" class="loading-state">正在加载数据</div>
+
+    <div id="app" class="app-shell" hidden>
+      <header class="topbar">
+        <div class="title-block">
+          <h1>待办与工作记录</h1>
+          <p id="headerSummary"></p>
+        </div>
+        <div class="top-actions">
+          <button class="icon-button" id="openCalendarButton" type="button" title="打开工作月历" aria-label="打开工作月历"><svg><use href="#icon-calendar"/></svg></button>
+          <button class="icon-button" id="openSettingsButton" type="button" title="设置和数据管理" aria-label="设置和数据管理"><svg><use href="#icon-settings"/></svg></button>
+        </div>
+      </header>
+
+      <nav class="primary-tabs" role="tablist" aria-label="内容类型">
+        <button id="todoTab" class="tab-button active" type="button" role="tab" aria-selected="true" data-module="todo"><svg><use href="#icon-list"/></svg><span>待办</span></button>
+        <button id="workTab" class="tab-button" type="button" role="tab" aria-selected="false" data-module="work"><svg><use href="#icon-notebook"/></svg><span>工作记录</span></button>
+      </nav>
+
+      <form id="quickForm" class="quick-capture" autocomplete="off">
+        <input id="quickInput" type="text" maxlength="200" placeholder="快速添加待办" aria-label="快速添加" required />
+        <input id="quickWorkDate" class="compact-date" type="text" data-picker="date" placeholder="YYYY-MM-DD" aria-label="工作日期" hidden />
+        <button class="primary-icon-button" type="submit" title="添加" aria-label="添加"><svg><use href="#icon-plus"/></svg></button>
+      </form>
+
+      <section id="todoControls" class="control-stack">
+        <nav class="view-tabs" aria-label="待办视图">
+          <button type="button" data-view="today" class="view-button active">今天</button>
+          <button type="button" data-view="upcoming" class="view-button">近期</button>
+          <button type="button" data-view="all" class="view-button">全部</button>
+          <button type="button" data-view="completed" class="view-button">已完成</button>
+          <button type="button" data-view="archived" class="view-button">归档</button>
+        </nav>
+        <div class="filter-row">
+          <label class="search-field"><svg><use href="#icon-search"/></svg><input id="todoSearch" type="search" placeholder="搜索待办" aria-label="搜索待办" /></label>
+          <select id="priorityFilter" aria-label="优先级筛选">
+            <option value="all">全部优先级</option>
+            <option value="high">高优先级</option>
+            <option value="medium">中优先级</option>
+            <option value="low">低优先级</option>
+            <option value="none">无优先级</option>
+          </select>
+          <select id="todoTagFilter" aria-label="标签筛选"><option value="all">全部标签</option></select>
+          <select id="sortMode" aria-label="排序方式">
+            <option value="manual">手动排序</option>
+            <option value="due">按截止时间</option>
+            <option value="priority">按优先级</option>
+            <option value="created">按创建时间</option>
+            <option value="title">按标题</option>
+          </select>
+        </div>
+      </section>
+
+      <section id="workControls" class="filter-row work-controls" hidden>
+        <input id="workViewDate" type="text" data-picker="date" placeholder="YYYY-MM-DD" aria-label="查看工作日期" />
+        <label class="search-field"><svg><use href="#icon-search"/></svg><input id="workSearch" type="search" placeholder="搜索工作项" aria-label="搜索工作项" /></label>
+        <select id="workTagFilter" aria-label="工作项标签筛选"><option value="all">全部标签</option></select>
+      </section>
+
+      <main id="contentArea" class="content-area" aria-live="polite">
+        <div id="itemList" class="item-list"></div>
+      </main>
+
+      <footer class="statusbar">
+        <span id="listSummary"></span>
+        <button id="contextActionButton" class="text-button" type="button" hidden></button>
+      </footer>
+    </div>
+
+    <div id="editorBackdrop" class="overlay" hidden>
+      <aside id="editorDrawer" class="drawer" aria-modal="true" role="dialog" aria-labelledby="editorTitle">
+        <header class="drawer-header"><h2 id="editorTitle">编辑</h2><button id="closeEditorButton" class="icon-button" type="button" aria-label="关闭" title="关闭"><svg><use href="#icon-x"/></svg></button></header>
+
+        <form id="taskForm" class="editor-form" autocomplete="off">
+          <label>标题<input id="taskTitle" type="text" maxlength="200" required /></label>
+          <label>备注<textarea id="taskNotes" maxlength="2000" rows="3"></textarea></label>
+          <div class="form-grid two-columns">
+            <label>截止日期<input id="taskDueDate" type="text" data-picker="date" placeholder="YYYY-MM-DD" /></label>
+            <label>截止时间<input id="taskDueTime" type="text" data-picker="time" placeholder="HH:mm" /></label>
+            <label>优先级<select id="taskPriority"><option value="none">无</option><option value="low">低</option><option value="medium">中</option><option value="high">高</option></select></label>
+            <label>重复<select id="taskRecurrence"><option value="none">不重复</option><option value="daily">每天</option><option value="weekdays">工作日</option><option value="weekly">每周</option><option value="monthly">每月</option></select></label>
+          </div>
+          <label>标签<input id="taskTags" type="text" maxlength="300" placeholder="使用逗号分隔" /></label>
+          <label class="check-row"><input id="taskWorkToggle" type="checkbox" /><span>计入工作项</span></label>
+          <section class="subtask-section">
+            <div class="section-heading"><h3>子任务</h3><button id="addSubtaskButton" class="icon-button small" type="button" title="添加子任务" aria-label="添加子任务"><svg><use href="#icon-plus"/></svg></button></div>
+            <div id="subtaskEditor" class="subtask-editor"></div>
+          </section>
+          <div class="form-actions"><button id="deleteTaskButton" class="danger-text-button" type="button">删除</button><span></span><button id="cancelTaskButton" class="secondary-button" type="button">取消</button><button class="primary-button" type="submit">保存</button></div>
+        </form>
+
+        <form id="workForm" class="editor-form" autocomplete="off" hidden>
+          <label>标题<input id="workTitle" type="text" maxlength="200" required /></label>
+          <label>工作日期<input id="workDate" type="text" data-picker="date" placeholder="YYYY-MM-DD" required /></label>
+          <label>标签<input id="workTags" type="text" maxlength="300" placeholder="使用逗号分隔" /></label>
+          <label>备注<textarea id="workNotes" maxlength="2000" rows="5"></textarea></label>
+          <div class="form-actions"><button id="deleteWorkButton" class="danger-text-button" type="button">删除</button><span></span><button id="cancelWorkButton" class="secondary-button" type="button">取消</button><button class="primary-button" type="submit">保存</button></div>
+        </form>
+      </aside>
+    </div>
+
+    <div id="settingsBackdrop" class="overlay" hidden>
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+        <header class="drawer-header"><h2 id="settingsTitle">设置与数据</h2><button id="closeSettingsButton" class="icon-button" type="button" aria-label="关闭" title="关闭"><svg><use href="#icon-x"/></svg></button></header>
+        <div class="settings-content">
+          <div class="form-grid two-columns">
+            <label>主题<select id="themeSetting"><option value="system">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option></select></label>
+            <label>密度<select id="densitySetting"><option value="comfortable">舒适</option><option value="compact">紧凑</option></select></label>
+            <label>默认视图<select id="defaultViewSetting"><option value="today">今天</option><option value="upcoming">近期</option><option value="all">全部</option><option value="completed">已完成</option></select></label>
+            <label>默认排序<select id="defaultSortSetting"><option value="manual">手动排序</option><option value="due">截止时间</option><option value="priority">优先级</option><option value="created">创建时间</option><option value="title">标题</option></select></label>
+          </div>
+          <section class="settings-section"><h3>备份与导入</h3><div class="button-row"><button id="exportJsonButton" class="secondary-button" type="button"><svg><use href="#icon-download"/></svg>导出 JSON</button><button id="mergeImportButton" class="secondary-button" type="button"><svg><use href="#icon-upload"/></svg>合并导入</button><button id="replaceImportButton" class="secondary-button" type="button"><svg><use href="#icon-upload"/></svg>覆盖导入</button></div></section>
+          <section id="legacySection" class="settings-section" hidden><h3>旧版待办</h3><div class="button-row"><button id="importLegacyButton" class="secondary-button" type="button">导入旧数据</button><button id="dismissLegacyButton" class="text-button" type="button">不再提示</button></div></section>
+          <section class="settings-section"><h3>整理</h3><div class="button-row"><button id="archiveCompletedButton" class="secondary-button" type="button"><svg><use href="#icon-archive"/></svg>归档全部已完成</button><button id="clearArchiveButton" class="danger-outline-button" type="button"><svg><use href="#icon-trash"/></svg>清空归档</button></div></section>
+        </div>
+      </section>
+    </div>
+
+    <input id="importFileInput" type="file" accept="application/json,.json" hidden />
+    <div id="toast" class="toast" role="status" hidden><span id="toastMessage"></span><button id="undoButton" class="text-button" type="button" hidden>撤销</button></div>
+
+    <script src="safe-select.js"></script><script src="safe-datetime.js"></script>
+    <script src="todo-core.js"></script>
+    <script src="todo-main.js"></script>
+  </body>
+</html>

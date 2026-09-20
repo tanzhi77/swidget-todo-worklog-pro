@@ -1,0 +1,30 @@
+{
+  "acceptsMouseEvents": true,
+  "author": "",
+  "authorEmail": "",
+  "authorWebsite": "",
+  "customFields": {},
+  "defaultGridSize": {
+    "cols": 4,
+    "rows": 4
+  },
+  "defaultShowBackground": false,
+  "description": "离线待办与工作记录组件，支持独立月历窗口、工作项联动和本地备份。",
+  "displayName": "待办与工作记录 Pro",
+  "functions": [],
+  "manualFileName": "manual.md",
+  "minimumAppVersion": "1.6.0.0",
+  "mouseEventMode": 2,
+  "name": "Embed_todo_worklog_pro",
+  "permissions": [],
+  "previewImageFileName": "preview.png",
+  "supportTypes": {
+    "supportsFile": false,
+    "supportsImage": false,
+    "supportsVideo": false
+  },
+  "tags": ["效率", "待办", "工作记录", "月历"],
+  "version": "1.0.0",
+  "widgetFileName": "Embed_todo_worklog_pro.qml",
+  "widgetType": "Qml"
+}
