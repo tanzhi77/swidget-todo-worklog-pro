@@ -360,6 +360,7 @@ SWidget {
 
         WebEngineView {
             id: mainWebView
+            settings.javascriptCanAccessClipboard: true
             zoomFactor: 1.5
             anchors.fill: parent
             backgroundColor: "transparent"
@@ -424,6 +425,7 @@ SWidget {
 
                 WebEngineView {
                     id: calendarWebView
+                    settings.javascriptCanAccessClipboard: true
                     anchors.fill: parent
                     zoomFactor: 1.5
                     backgroundColor: "transparent"

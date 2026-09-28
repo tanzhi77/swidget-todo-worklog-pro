@@ -43,6 +43,7 @@ Window {
     }
 
     WebEngineView {
+        settings.javascriptCanAccessClipboard: true
         zoomFactor: 1.5
         id: calendarWebView
         anchors.fill: parent

@@ -2,6 +2,7 @@
   "use strict";
 
   const Todo = global.TodoPro;
+  const Holidays = global.TodoHolidays;
   global.addEventListener("host-file-result", (event) => showToast(event.detail));
   const byId = (id) => document.getElementById(id);
   const dom = {
@@ -147,6 +148,8 @@
     dom.grid.innerHTML = cells
       .map((cell) => {
         const dayEntries = grouped.get(cell.date) || [];
+        const holiday = Holidays.getDay(cell.date);
+        const holidayDescription = holiday ? " · " + holiday.description : "";
         const previews = dayEntries
           .map(
             (entry) => `<span class="calendar-entry ${escapeHtml(entry.kind)}" title="${escapeHtml(
@@ -157,9 +160,10 @@
         return `<button type="button" class="day-cell${cell.inMonth ? "" : " outside"}${
           cell.isToday ? " today" : ""
         }${cell.date === ui.selectedDate ? " selected" : ""}" data-date="${cell.date}" aria-label="${escapeHtml(
-          Todo.formatDateLabel(cell.date, true),
-        )}">
-          <span class="day-number">${cell.day}${cell.isToday ? "<em>今</em>" : ""}</span>
+          Todo.formatDateLabel(cell.date, true) + holidayDescription,
+        )}" title="${escapeHtml(Todo.formatDateLabel(cell.date, true) + holidayDescription)}">
+          <span class="date-cell-heading"><span class="day-number">${cell.day}${cell.isToday ? "<em>今</em>" : ""}</span>${holiday ? '<span class="holiday-badge ' + holiday.type + '">' + holiday.label + '</span>' : ""}</span>
+          ${holiday ? '<span class="holiday-name ' + holiday.type + '">' + escapeHtml(holiday.name) + '</span>' : ""}
           <span class="calendar-entry-stack">${previews}</span>
         </button>`;
       })
@@ -169,13 +173,17 @@
   function renderDetail(entries) {
     const selectedEntries = entries.filter((entry) => entry.date === ui.selectedDate);
     dom.selectedTitle.textContent = Todo.formatDateLabel(ui.selectedDate, true);
-    dom.selectedSummary.textContent = `${selectedEntries.length} 条记录`;
+    const holiday = Holidays.getDay(ui.selectedDate);
+    dom.selectedSummary.textContent = `${selectedEntries.length} 条记录` + (holiday ? " · " + holiday.description : "");
     dom.entryList.innerHTML = selectedEntries.length
       ? selectedEntries.map(dayEntryCard).join("")
       : '<div class="empty-state compact"><span class="empty-symbol"><svg><use href="#icon-notebook"></use></svg></span><strong>暂无记录</strong><p>当前日期无工作项或已办</p></div>';
   }
 
   function render(state) {
+    const holidaySource = Holidays.getSource(ui.year);
+    byId("holidayScheduleStatus").textContent = holidaySource ? "休 假期 · 班 调休上班" : ui.year + " 年节假日数据未收录";
+    byId("holidayScheduleStatus").title = holidaySource ? ui.year + "年中国大陆放假安排 · " + holidaySource.document : "当前离线数据包含 " + Holidays.years.join("、") + " 年";
     document.body.classList.toggle("wrap-entries", Boolean(state.settings.calendarWrap));
     byId("toggleWrapButton").setAttribute("aria-pressed", String(Boolean(state.settings.calendarWrap)));
     document.body.dataset.theme = state.settings.theme;
@@ -265,10 +273,12 @@
         byId("reportPreview").value = text;
         byId("reportStatus").textContent = text ? text.split("\r\n").length + " 项工作项" : "所选日期范围内没有工作项";
         byId("saveReportButton").disabled = !text;
+        byId("copyReportButton").disabled = !text;
       } catch (error) {
         byId("reportPreview").value = "";
         byId("reportStatus").textContent = error.message;
         byId("saveReportButton").disabled = true;
+        byId("copyReportButton").disabled = true;
       }
     }
     function resetReportRange(currentWeek = 1) {
@@ -294,6 +304,32 @@
     }));
     byId("closeReportButton").addEventListener("click", closeReport);
     byId("cancelReportButton").addEventListener("click", closeReport);
+    byId("copyReportButton").addEventListener("click", async () => {
+      updateReport();
+      if (byId("copyReportButton").disabled) return;
+      const preview = byId("reportPreview");
+      const start = preview.selectionStart, end = preview.selectionEnd;
+      const scrollTop = preview.scrollTop;
+      let copied = false;
+      try {
+        preview.focus();
+        preview.select();
+        copied = document.execCommand("copy");
+      } catch (_error) {
+        copied = false;
+      } finally {
+        preview.setSelectionRange(start, end);
+        preview.scrollTop = scrollTop;
+        byId("copyReportButton").focus();
+      }
+      if (!copied && navigator.clipboard?.writeText) {
+        try {
+          await navigator.clipboard.writeText(preview.value);
+          copied = true;
+        } catch (_error) { copied = false; }
+      }
+      showToast(copied ? "已复制双周报" : "复制失败，请选中预览内容手动复制");
+    });
     report.addEventListener("click", (event) => { if (event.target === report) closeReport(); });
     report.addEventListener("keydown", (event) => { if (event.key === "Escape") { event.stopPropagation(); closeReport(); } });
     byId("reportForm").addEventListener("submit", (event) => {
