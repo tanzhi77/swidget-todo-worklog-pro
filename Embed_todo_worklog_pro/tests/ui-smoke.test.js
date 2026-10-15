@@ -293,7 +293,7 @@ async function checkCalendarLayout(calendar, width, height) {
       const T = window.TodoPro;
       await window.__todoController.update((state) => {
         state.settings.sortMode = "manual";
-        state.tasks = ["排序第一项", "排序第二项"].map((title, index) => T.createTask({title, dueDate: T.localDateKey()}, index));
+        state.tasks = ['排序第一项 & <测试> "标题"', "排序第二项"].map((title, index) => T.createTask({title, dueDate: T.localDateKey()}, index));
         state.workItems = Array.from({length: 10}, (_, index) => T.createManualWorkItem({
           title: "工作记录" + index + "：长标题换行后仍可完整阅读并使用日期格剩余空间",
           workDate: T.localDateKey(),
@@ -301,6 +301,12 @@ async function checkCalendarLayout(calendar, width, height) {
       });
     });
     await fallbackPage.locator('[data-view="today"]').click();
+    await fallbackContext.grantPermissions(["clipboard-read", "clipboard-write"]);
+    const revisionBeforeCopy = await fallbackPage.evaluate(() => window.__todoController.state.revision);
+    await fallbackPage.locator('[data-action="copy-task-title"]').first().click();
+    assert.equal(await fallbackPage.evaluate(() => navigator.clipboard.readText()), '排序第一项 & <测试> "标题"');
+    assert.equal(await fallbackPage.evaluate(() => window.__todoController.state.revision), revisionBeforeCopy);
+    assert.equal(await fallbackPage.locator("#editorBackdrop").isVisible(), false);
     const handles = fallbackPage.locator(".drag-handle");
     assert.equal(await handles.count(), 2);
     const sourceBox = await handles.nth(0).boundingBox();
@@ -315,6 +321,8 @@ async function checkCalendarLayout(calendar, width, height) {
     assert.equal(await fallbackPage.locator(".task-card strong").first().textContent(), "排序第二项");
     await fallbackPage.locator('[data-action="toggle-task"]').first().click();
     await fallbackPage.locator('[data-view="completed"]').click();
+    await fallbackPage.locator('[data-action="copy-task-title"]').first().click();
+    assert.equal(await fallbackPage.evaluate(() => navigator.clipboard.readText()), "排序第二项");
     assert.match(await fallbackPage.locator(".completed-time").textContent(), /完成于 \d{4}-\d{2}-\d{2} \d{2}:\d{2}/);
     const centered = await fallbackPage.locator(".status-toggle.checked").evaluate((button) => {
       const a = button.getBoundingClientRect(), b = button.querySelector("svg").getBoundingClientRect();

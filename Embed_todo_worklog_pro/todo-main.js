@@ -238,6 +238,7 @@
       </div>
       <div class="item-actions">
         ${archiveAction}
+        <button class="icon-button small" type="button" data-action="copy-task-title" data-id="${escapeHtml(task.id)}" title="复制标题" aria-label="复制标题">${icon("copy")}</button>
         ${canReorder ? '<button class="icon-button small drag-handle" type="button" aria-label="拖动排序" title="拖动排序（方向键上移、下移）">' + icon("grip") + '</button>' : ""}
         <button class="icon-button small" type="button" data-action="edit-task" data-id="${escapeHtml(
           task.id,
@@ -447,6 +448,33 @@
     }
 
     const task = controller.state.tasks.find((item) => item.id === id);
+    if (action === "copy-task-title" && task) {
+      const active = document.activeElement;
+      const field = document.createElement("textarea");
+      field.value = task.title;
+      field.readOnly = true;
+      field.tabIndex = -1;
+      field.style.cssText = "position:fixed;left:-10000px;top:0;width:1px;height:1px;";
+      document.body.appendChild(field);
+      let copied = false;
+      try {
+        field.select();
+        copied = document.execCommand("copy");
+      } catch (_error) {
+        copied = false;
+      } finally {
+        field.remove();
+        if (active && active.isConnected) active.focus({ preventScroll: true });
+      }
+      if (!copied && navigator.clipboard?.writeText) {
+        try {
+          await navigator.clipboard.writeText(task.title);
+          copied = true;
+        } catch (_error) { copied = false; }
+      }
+      showToast(copied ? "已复制待办标题" : "复制失败，请手动复制标题");
+      return;
+    }
     if (action === "toggle-task" && task) {
       await updateState(
         (draft) => Todo.setTaskCompleted(draft, id, task.status === "active"),
