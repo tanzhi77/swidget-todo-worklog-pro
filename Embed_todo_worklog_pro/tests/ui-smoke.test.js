@@ -307,6 +307,23 @@ async function checkCalendarLayout(calendar, width, height) {
     assert.equal(await fallbackPage.evaluate(() => navigator.clipboard.readText()), '排序第一项 & <测试> "标题"');
     assert.equal(await fallbackPage.evaluate(() => window.__todoController.state.revision), revisionBeforeCopy);
     assert.equal(await fallbackPage.locator("#editorBackdrop").isVisible(), false);
+    assert.equal(await fallbackPage.locator(".task-card .item-actions button").first().locator("..").locator("button").count(), 3);
+    assert.equal(await fallbackPage.locator(".task-card > .drag-handle").count(), 2);
+    for (const width of [360, 720]) {
+      await fallbackPage.setViewportSize({width, height: 520});
+      const stripSize = await fallbackPage.locator(".task-drag-strip").first().evaluate((strip) => {
+        const rail = strip.getBoundingClientRect(), card = strip.closest(".task-card").getBoundingClientRect();
+        return {width: rail.width, height: rail.height, cardHeight: card.height, left: rail.left - card.left};
+      });
+      assert.equal(stripSize.width, 24);
+      assert.ok(Math.abs(stripSize.height - stripSize.cardHeight) <= 2);
+      assert.ok(stripSize.left <= 1);
+    }
+    await fallbackPage.screenshot({path: path.join(root, "tests", "task-drag-strip.png")});
+    await fallbackPage.locator('[data-action="more-task"]').first().click();
+    assert.equal(await fallbackPage.locator('#taskMoreMenu [data-action="delete-task"]').count(), 1);
+    await fallbackPage.keyboard.press("Escape");
+    assert.equal(await fallbackPage.locator("#taskMoreMenu").isVisible(), false);
     const handles = fallbackPage.locator(".drag-handle");
     assert.equal(await handles.count(), 2);
     const sourceBox = await handles.nth(0).boundingBox();
@@ -323,6 +340,19 @@ async function checkCalendarLayout(calendar, width, height) {
     await fallbackPage.locator('[data-view="completed"]').click();
     await fallbackPage.locator('[data-action="copy-task-title"]').first().click();
     assert.equal(await fallbackPage.evaluate(() => navigator.clipboard.readText()), "排序第二项");
+    await fallbackPage.locator('[data-action="more-task"]').first().click();
+    const menuBox = await fallbackPage.locator("#taskMoreMenu").boundingBox();
+    assert.ok(menuBox.x >= 0 && menuBox.x + menuBox.width <= 720 && menuBox.y + menuBox.height <= 520);
+    await fallbackPage.getByRole("menuitem", {name: "归档", exact: true}).click();
+    await fallbackPage.locator('[data-view="archived"]').click();
+    await fallbackPage.locator('[data-action="more-task"]').first().click();
+    await fallbackPage.getByRole("menuitem", {name: "恢复到已完成", exact: true}).click();
+    await fallbackPage.locator('[data-view="completed"]').click();
+    await fallbackPage.locator('[data-action="more-task"]').first().click();
+    await fallbackPage.getByRole("menuitem", {name: "删除", exact: true}).click();
+    await fallbackPage.waitForFunction(() => window.__todoController.state.tasks.length === 1);
+    await fallbackPage.locator("#undoButton").click();
+    await fallbackPage.waitForFunction(() => window.__todoController.state.tasks.length === 2);
     assert.match(await fallbackPage.locator(".completed-time").textContent(), /完成于 \d{4}-\d{2}-\d{2} \d{2}:\d{2}/);
     const centered = await fallbackPage.locator(".status-toggle.checked").evaluate((button) => {
       const a = button.getBoundingClientRect(), b = button.querySelector("svg").getBoundingClientRect();

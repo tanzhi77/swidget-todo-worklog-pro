@@ -61,6 +61,72 @@
   let importMode = "merge";
   let dragTaskId = null;
   let undoState = null;
+  let menuTrigger = null;
+  const taskMenu = document.createElement("div");
+  taskMenu.id = "taskMoreMenu";
+  taskMenu.className = "task-more-menu";
+  taskMenu.setAttribute("role", "menu");
+  taskMenu.setAttribute("aria-label", "待办更多操作");
+  taskMenu.hidden = true;
+  document.body.appendChild(taskMenu);
+
+  function closeTaskMenu(restoreFocus = false) {
+    if (menuTrigger) {
+      menuTrigger.setAttribute("aria-expanded", "false");
+      if (restoreFocus && menuTrigger.isConnected) menuTrigger.focus({ preventScroll: true });
+    }
+    taskMenu.hidden = true;
+    menuTrigger = null;
+  }
+
+  function openTaskMenu(id) {
+    const task = controller.state.tasks.find((item) => item.id === id);
+    const trigger = Array.from(dom.itemList.querySelectorAll('[data-action="more-task"]')).find((button) => button.dataset.id === id);
+    if (!task || !trigger) return;
+    if (menuTrigger === trigger && !taskMenu.hidden) { closeTaskMenu(true); return; }
+    closeTaskMenu();
+    global.SafeSelect?.closeAll();
+    menuTrigger = trigger;
+    const options = task.status === "completed" ? [["archive-task", "归档", "archive"]]
+      : task.status === "archived" ? [["restore-task", "恢复到已完成", "restore"]] : [];
+    options.push(["delete-task", "删除", "trash"]);
+    taskMenu.innerHTML = options.map(([action, label, symbol]) =>
+      '<button type="button" role="menuitem" class="task-menu-item' + (action === "delete-task" ? ' danger-text-button' : '') + '" data-action="' + action + '" data-id="' + escapeHtml(id) + '">' + icon(symbol) + escapeHtml(label) + '</button>').join("");
+    taskMenu.hidden = false;
+    trigger.setAttribute("aria-expanded", "true");
+    const box = trigger.getBoundingClientRect();
+    taskMenu.style.left = Math.max(4, Math.min(box.right - taskMenu.offsetWidth, innerWidth - taskMenu.offsetWidth - 4)) + "px";
+    taskMenu.style.top = Math.max(4, Math.min(box.bottom + 4, innerHeight - taskMenu.offsetHeight - 4)) + "px";
+    taskMenu.querySelector("button").focus({ preventScroll: true });
+  }
+
+  document.addEventListener("pointerdown", (event) => {
+    if (menuTrigger && !taskMenu.contains(event.target) && !menuTrigger.contains(event.target)) closeTaskMenu();
+  }, true);
+  document.addEventListener("keydown", (event) => {
+    if (menuTrigger && event.key === "Escape") {
+      event.preventDefault(); event.stopImmediatePropagation(); closeTaskMenu(true);
+    }
+  }, true);
+  taskMenu.addEventListener("keydown", (event) => {
+    if (event.key === "Tab") { closeTaskMenu(true); return; }
+    const buttons = Array.from(taskMenu.querySelectorAll("button"));
+    let index = buttons.indexOf(document.activeElement);
+    if (event.key === "ArrowDown") index = (index + 1) % buttons.length;
+    else if (event.key === "ArrowUp") index = (index + buttons.length - 1) % buttons.length;
+    else if (event.key === "Home") index = 0;
+    else if (event.key === "End") index = buttons.length - 1;
+    else return;
+    event.preventDefault(); buttons[index].focus();
+  });
+  taskMenu.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-action]");
+    if (!button) return;
+    closeTaskMenu(true);
+    handleItemAction(button.dataset.action, button.dataset.id);
+  });
+  global.addEventListener("resize", () => closeTaskMenu());
+  global.addEventListener("scroll", () => closeTaskMenu(), true);
   const ui = {
     module: "todo",
     todoView: "today",
@@ -214,21 +280,11 @@
       leading = `<span class="status-toggle checked muted" title="已归档">${icon("archive")}</span>`;
     }
 
-    const archiveAction =
-      task.status === "completed"
-        ? `<button class="icon-button small" type="button" data-action="archive-task" data-id="${escapeHtml(
-            task.id,
-          )}" title="归档" aria-label="归档">${icon("archive")}</button>`
-        : task.status === "archived"
-          ? `<button class="icon-button small" type="button" data-action="restore-task" data-id="${escapeHtml(
-              task.id,
-            )}" title="恢复到已完成" aria-label="恢复到已完成">${icon("restore")}</button>`
-          : "";
-
-    return `<article class="item-card task-card${completed ? " completed" : ""}${
+    return `<article class="item-card task-card${canReorder ? " reorderable" : ""}${completed ? " completed" : ""}${
       archived ? " archived" : ""
     }" data-task-id="${escapeHtml(task.id)}" draggable="false">
-      ${leading}
+      ${canReorder ? '<button class="drag-handle task-drag-strip" type="button" aria-label="拖动排序" title="拖动排序（方向键上移、下移）">' + icon("grip") + '</button>' : ""}
+      <div class="task-leading">${leading}</div>
       <div class="item-body" role="button" tabindex="0" data-action="edit-task" data-id="${escapeHtml(
         task.id,
       )}">
@@ -237,15 +293,11 @@
         ${meta.length ? `<div class="item-meta">${meta.join("")}</div>` : ""}
       </div>
       <div class="item-actions">
-        ${archiveAction}
         <button class="icon-button small" type="button" data-action="copy-task-title" data-id="${escapeHtml(task.id)}" title="复制标题" aria-label="复制标题">${icon("copy")}</button>
-        ${canReorder ? '<button class="icon-button small drag-handle" type="button" aria-label="拖动排序" title="拖动排序（方向键上移、下移）">' + icon("grip") + '</button>' : ""}
         <button class="icon-button small" type="button" data-action="edit-task" data-id="${escapeHtml(
           task.id,
         )}" title="编辑" aria-label="编辑">${icon("pencil")}</button>
-        <button class="icon-button small danger-icon" type="button" data-action="delete-task" data-id="${escapeHtml(
-          task.id,
-        )}" title="删除" aria-label="删除">${icon("trash")}</button>
+        <button class="icon-button small" type="button" data-action="more-task" data-id="${escapeHtml(task.id)}" title="更多操作" aria-label="更多操作" aria-haspopup="menu" aria-controls="taskMoreMenu" aria-expanded="false">${icon("more")}</button>
       </div>
     </article>`;
   }
@@ -290,6 +342,7 @@
   }
 
   function renderTodoList(state) {
+    closeTaskMenu();
     const canReorder =
       ["today", "upcoming", "all"].includes(ui.todoView) &&
       state.settings.sortMode === "manual";
@@ -312,6 +365,7 @@
   }
 
   function renderWorkList(state) {
+    closeTaskMenu();
     const items = Todo.getWorkItemsForDate(
       state,
       ui.workDate,
@@ -438,6 +492,7 @@
   }
 
   async function handleItemAction(action, id) {
+    if (action === "more-task") { openTaskMenu(id); return; }
     if (action === "edit-task" || action === "edit-linked-task") {
       openTaskEditor(id);
       return;
