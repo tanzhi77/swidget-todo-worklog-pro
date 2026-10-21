@@ -1,5 +1,5 @@
 "use strict";
-const { app, BrowserWindow, ipcMain, dialog, Menu, shell, screen } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog, Menu, shell, screen, clipboard } = require("electron");
 const fs = require("node:fs");
 const path = require("node:path");
 const { Storage } = require("./storage.cjs");
@@ -61,6 +61,11 @@ else {
   }
   app.whenReady().then(() => {
     handle("state:load", () => storage.load());
+    handle("clipboard:write", (_owner, text) => {
+      if (typeof text !== "string" || Buffer.byteLength(text) > 20 * 1024 * 1024) throw new Error("复制内容无效");
+      clipboard.writeText(text);
+      return true;
+    });
     handle("state:commit", (_owner, json, revision) => {
       const accepted = storage.commit(json, revision);
       if (accepted) for (const win of windows) win.webContents.send("state:changed", storage.load());

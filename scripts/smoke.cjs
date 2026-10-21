@@ -25,6 +25,17 @@ async function launch() {
     await page.locator("#quickInput").fill("独立版重启恢复测试");
     await page.locator("#quickForm").press("Enter");
     await page.waitForFunction(() => window.__todoController.state.tasks.length === 1);
+    await application.evaluate(({clipboard}) => {
+      clipboard.writeText = (text) => { globalThis.__smokeCopiedText = text; };
+    });
+    await page.locator('[data-action="copy-task-title"]').click();
+    await page.waitForFunction(() => document.querySelector("#toastMessage").textContent === "已复制待办标题");
+    assert.equal(await application.evaluate(() => globalThis.__smokeCopiedText), "独立版重启恢复测试");
+    assert.equal(await page.locator(".task-drag-strip").count(), 1);
+    assert.equal(await page.locator('[data-action="more-task"]').count(), 1);
+    await page.locator('[data-action="more-task"]').click();
+    assert.equal(await page.locator("#taskMoreMenu").isVisible(), true);
+    await page.keyboard.press("Escape");
     await page.locator(".task-card .item-body").click();
     await page.locator("#taskWorkToggle").check();
     await page.locator("#taskForm button[type=submit]").click();
@@ -33,6 +44,8 @@ async function launch() {
     const calendar = await opened;
     calendar.on("pageerror", (error) => errors.push(error.message));
     await calendar.waitForFunction(() => window.__todoCalendarReady === true);
+    assert.equal(await calendar.evaluate(() => window.TodoHolidays.getDay("2026-10-01").type), "rest");
+    assert.ok(await calendar.locator(".holiday-badge").count() > 0);
     await page.locator('[data-action="toggle-task"]').click();
     await calendar.waitForFunction(() => window.__todoCalendarController.state.tasks[0].status === "completed");
     await page.locator("#openCalendarButton").click();
@@ -53,6 +66,9 @@ async function launch() {
     await calendar.waitForFunction(() => document.querySelector("#calendarToastMessage").textContent.startsWith("已保存至："));
     assert.ok(fs.readdirSync(exportsDir).some((name) => name.endsWith(".csv")));
     await calendar.locator("#exportReportButton").click();
+    await calendar.locator("#copyReportButton").click();
+    await calendar.waitForFunction(() => document.querySelector("#calendarToastMessage").textContent === "已复制双周报");
+    assert.ok((await application.evaluate(() => globalThis.__smokeCopiedText)).includes("1、独立版重启恢复测试"));
     await calendar.locator("#saveReportButton").click();
     await calendar.waitForFunction(() => document.querySelector("#calendarToastMessage").textContent.includes(".txt"));
     const txt = fs.readdirSync(exportsDir).find((name) => name.endsWith(".txt"));

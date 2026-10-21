@@ -272,11 +272,19 @@ async function checkCalendarLayout(calendar, width, height) {
       window.open = () => null;
     });
     const fallbackPage = await fallbackContext.newPage();
+    await fallbackPage.clock.setFixedTime(new Date(2026, 8, 22, 12));
     await fallbackPage.goto(`${baseUrl}/todo.html`, { waitUntil: "networkidle" });
     await fallbackPage.waitForFunction(() => window.__todoAppReady === true);
     await fallbackPage.locator("#openCalendarButton").click();
     await fallbackPage.waitForURL(/work-calendar\.html\?embedded=1$/);
     await fallbackPage.waitForFunction(() => window.__todoCalendarReady === true);
+    assert.equal(await fallbackPage.locator('[data-date="2026-09-20"] .holiday-badge').textContent(), "班");
+    assert.equal(await fallbackPage.locator('[data-date="2026-09-25"] .holiday-badge').textContent(), "休");
+    assert.equal(await fallbackPage.locator('[data-date="2026-09-19"] .holiday-badge').count(), 0);
+    await fallbackPage.locator('[data-date="2026-09-25"]').click();
+    assert.match(await fallbackPage.locator("#selectedDateSummary").textContent(), /中秋节放假/);
+    for (let month = 0; month < 4; month++) await fallbackPage.locator("#nextMonthButton").click();
+    assert.match(await fallbackPage.locator("#holidayScheduleStatus").textContent(), /2027 年节假日数据未收录/);
     await fallbackPage.locator("#closeCalendarButton").click();
     await fallbackPage.waitForURL(/todo\.html$/);
     await fallbackPage.waitForFunction(() => window.__todoAppReady === true);
@@ -285,7 +293,7 @@ async function checkCalendarLayout(calendar, width, height) {
       const T = window.TodoPro;
       await window.__todoController.update((state) => {
         state.settings.sortMode = "manual";
-        state.tasks = ["排序第一项", "排序第二项"].map((title, index) => T.createTask({title, dueDate: T.localDateKey()}, index));
+        state.tasks = ['排序第一项 & <测试> "标题"', "排序第二项"].map((title, index) => T.createTask({title, dueDate: T.localDateKey()}, index));
         state.workItems = Array.from({length: 10}, (_, index) => T.createManualWorkItem({
           title: "工作记录" + index + "：长标题换行后仍可完整阅读并使用日期格剩余空间",
           workDate: T.localDateKey(),
@@ -293,6 +301,29 @@ async function checkCalendarLayout(calendar, width, height) {
       });
     });
     await fallbackPage.locator('[data-view="today"]').click();
+    await fallbackContext.grantPermissions(["clipboard-read", "clipboard-write"]);
+    const revisionBeforeCopy = await fallbackPage.evaluate(() => window.__todoController.state.revision);
+    await fallbackPage.locator('[data-action="copy-task-title"]').first().click();
+    assert.equal(await fallbackPage.evaluate(() => navigator.clipboard.readText()), '排序第一项 & <测试> "标题"');
+    assert.equal(await fallbackPage.evaluate(() => window.__todoController.state.revision), revisionBeforeCopy);
+    assert.equal(await fallbackPage.locator("#editorBackdrop").isVisible(), false);
+    assert.equal(await fallbackPage.locator(".task-card .item-actions button").first().locator("..").locator("button").count(), 3);
+    assert.equal(await fallbackPage.locator(".task-card > .drag-handle").count(), 2);
+    for (const width of [360, 720]) {
+      await fallbackPage.setViewportSize({width, height: 520});
+      const stripSize = await fallbackPage.locator(".task-drag-strip").first().evaluate((strip) => {
+        const rail = strip.getBoundingClientRect(), card = strip.closest(".task-card").getBoundingClientRect();
+        return {width: rail.width, height: rail.height, cardHeight: card.height, left: rail.left - card.left};
+      });
+      assert.equal(stripSize.width, 24);
+      assert.ok(Math.abs(stripSize.height - stripSize.cardHeight) <= 2);
+      assert.ok(stripSize.left <= 1);
+    }
+    await fallbackPage.screenshot({path: path.join(root, "tests", "task-drag-strip.png")});
+    await fallbackPage.locator('[data-action="more-task"]').first().click();
+    assert.equal(await fallbackPage.locator('#taskMoreMenu [data-action="delete-task"]').count(), 1);
+    await fallbackPage.keyboard.press("Escape");
+    assert.equal(await fallbackPage.locator("#taskMoreMenu").isVisible(), false);
     const handles = fallbackPage.locator(".drag-handle");
     assert.equal(await handles.count(), 2);
     const sourceBox = await handles.nth(0).boundingBox();
@@ -307,6 +338,21 @@ async function checkCalendarLayout(calendar, width, height) {
     assert.equal(await fallbackPage.locator(".task-card strong").first().textContent(), "排序第二项");
     await fallbackPage.locator('[data-action="toggle-task"]').first().click();
     await fallbackPage.locator('[data-view="completed"]').click();
+    await fallbackPage.locator('[data-action="copy-task-title"]').first().click();
+    assert.equal(await fallbackPage.evaluate(() => navigator.clipboard.readText()), "排序第二项");
+    await fallbackPage.locator('[data-action="more-task"]').first().click();
+    const menuBox = await fallbackPage.locator("#taskMoreMenu").boundingBox();
+    assert.ok(menuBox.x >= 0 && menuBox.x + menuBox.width <= 720 && menuBox.y + menuBox.height <= 520);
+    await fallbackPage.getByRole("menuitem", {name: "归档", exact: true}).click();
+    await fallbackPage.locator('[data-view="archived"]').click();
+    await fallbackPage.locator('[data-action="more-task"]').first().click();
+    await fallbackPage.getByRole("menuitem", {name: "恢复到已完成", exact: true}).click();
+    await fallbackPage.locator('[data-view="completed"]').click();
+    await fallbackPage.locator('[data-action="more-task"]').first().click();
+    await fallbackPage.getByRole("menuitem", {name: "删除", exact: true}).click();
+    await fallbackPage.waitForFunction(() => window.__todoController.state.tasks.length === 1);
+    await fallbackPage.locator("#undoButton").click();
+    await fallbackPage.waitForFunction(() => window.__todoController.state.tasks.length === 2);
     assert.match(await fallbackPage.locator(".completed-time").textContent(), /完成于 \d{4}-\d{2}-\d{2} \d{2}:\d{2}/);
     const centered = await fallbackPage.locator(".status-toggle.checked").evaluate((button) => {
       const a = button.getBoundingClientRect(), b = button.querySelector("svg").getBoundingClientRect();
@@ -334,11 +380,18 @@ async function checkCalendarLayout(calendar, width, height) {
     assert.equal(await fallbackPage.locator("#reportFirstWeek").getAttribute("aria-pressed"), "true");
     await fallbackPage.locator("#reportStart").fill("2026-02-30");
     assert.equal(await fallbackPage.locator("#saveReportButton").isDisabled(), true);
+    assert.equal(await fallbackPage.locator("#copyReportButton").isDisabled(), true);
     const reportDate = await fallbackPage.evaluate(() => window.TodoPro.localDateKey());
     await fallbackPage.locator("#reportStart").fill(reportDate);
     await fallbackPage.locator("#reportEnd").fill(reportDate);
     const reportText = await fallbackPage.locator("#reportPreview").inputValue();
     assert.equal(reportText.split("\n").length, 10);
+    assert.equal(await fallbackPage.locator("#saveReportButton").evaluate((button) => getComputedStyle(button).backgroundColor), "rgb(82, 111, 163)");
+    await fallbackContext.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await fallbackPage.locator("#copyReportButton").click();
+    const clipboardText = await fallbackPage.evaluate(() => navigator.clipboard.readText());
+    assert.equal(clipboardText.replace(/\r\n/g, "\n"), reportText);
+    assert.equal(await fallbackPage.locator("#reportBackdrop").isVisible(), true);
     const reportDownloadPromise = fallbackPage.waitForEvent("download");
     await fallbackPage.locator("#saveReportButton").click();
     const reportDownload = await reportDownloadPromise;

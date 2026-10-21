@@ -1,6 +1,8 @@
 # 待办与工作记录 Pro 独立绿色版
 
-Windows x64 免安装桌面工具，版本 **1.0.0**。不依赖 Sapphire、Node.js 或浏览器安装。此分支为 `standalone-portable`，原 Sapphire 组件分支保持独立。
+Windows x64 免安装桌面工具，版本 **1.0.2**。不依赖 Sapphire、Node.js 或浏览器安装。此分支为 `standalone-portable`，原 Sapphire 组件分支保持独立。
+
+已同步原版 `main` 的 `c3af13b`，包含节假日日历、待办标题复制、双周报复制、精简操作按钮及整行高度拖动手柄。独立版保留自己的窗口、数据文件与原生导出接口。
 
 ## 功能
 
@@ -34,4 +36,4 @@ Windows x64 免安装桌面工具，版本 **1.0.0**。不依赖 Sapphire、Node
 
 ## 项目来源
 
-本组件面向 [hymnly133/swidget](https://github.com/hymnly133/swidget) 的 Sapphire 组件规范开发，依赖宿主提供的公共 QML 模块。此仓库仅包含本组件，不包含原项目的其他组件、宿主程序或用户数据。
+界面与业务逻辑源自面向 [hymnly133/swidget](https://github.com/hymnly133/swidget) 的 Sapphire 组件。独立版由 Electron 提供窗口与系统接口，运行时不依赖 QML 或 Sapphire；不包含用户数据。

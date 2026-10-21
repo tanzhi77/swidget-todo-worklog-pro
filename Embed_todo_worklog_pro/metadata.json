@@ -24,7 +24,7 @@
     "supportsVideo": false
   },
   "tags": ["效率", "待办", "工作记录", "月历"],
-  "version": "1.0.0",
+  "version": "1.0.2",
   "widgetFileName": "Embed_todo_worklog_pro.qml",
   "widgetType": "Qml"
 }

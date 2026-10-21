@@ -2,6 +2,7 @@
 const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("portableHost", {
   load: () => ipcRenderer.invoke("state:load"),
+  copyText: (text) => ipcRenderer.invoke("clipboard:write", text),
   commit: (json, revision) => ipcRenderer.invoke("state:commit", json, revision),
   openCalendar: () => ipcRenderer.invoke("calendar:open"),
   closeCalendar: () => ipcRenderer.invoke("calendar:close"),

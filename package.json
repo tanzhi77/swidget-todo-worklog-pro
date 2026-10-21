@@ -1,7 +1,7 @@
 {
   "name": "todo-worklog-pro",
   "productName": "TodoWorklogPro",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "private": true,
   "description": "Offline portable todo and work log",
   "main": "desktop/main.cjs",
